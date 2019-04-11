@@ -1,5 +1,5 @@
 # awd_worm_phpwebshell_framework
-awd-php-webshell awd比赛落地RPG，别人还在慢慢捡武器，目的是快速批量持续控制靶机。
+awd-php-webshell awd比赛落地RPG，别人还在慢慢捡武器，目的是快速批量持续控制靶机。等我一场比赛完会公开源码，持续改进完善中。
 
 
 假设shell.php已经上传到目录，
@@ -21,5 +21,6 @@ python客户端部分：
 
 2.webshell_url=‘’填你上传的地址或者感染的php地址
 
-3.如果文件有中文乱码可以把第52行的注释去掉
+前端部分：
 
+1.浏览者会自动循环跳转带参数“_”原生ajax请求进行传播
